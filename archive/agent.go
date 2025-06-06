@@ -14,89 +14,93 @@ type Memo = uint64
 
 type AccountIdentifier = []byte
 
-type Tokens = struct {
-	E8s uint64 `ic:"e8s"`
+type Tokens struct {
+	E8s uint64 `ic:"e8s" json:"e8s"`
 }
 
-type Timestamp = struct {
-	TimestampNanos uint64 `ic:"timestamp_nanos"`
+type Timestamp struct {
+	TimestampNanos uint64 `ic:"timestamp_nanos" json:"timestamp_nanos"`
 }
 
-type Operation = struct {
+type Operation struct {
 	Mint *struct {
-		To     AccountIdentifier `ic:"to"`
-		Amount Tokens            `ic:"amount"`
-	} `ic:"Mint,variant"`
+		To     AccountIdentifier `ic:"to" json:"to"`
+		Amount Tokens            `ic:"amount" json:"amount"`
+	} `ic:"Mint,variant" json:"Mint,omitempty"`
 	Burn *struct {
-		From    AccountIdentifier  `ic:"from"`
-		Spender *AccountIdentifier `ic:"spender,omitempty"`
-		Amount  Tokens             `ic:"amount"`
-	} `ic:"Burn,variant"`
+		From    AccountIdentifier  `ic:"from" json:"from"`
+		Spender *AccountIdentifier `ic:"spender,omitempty" json:"spender,omitempty"`
+		Amount  Tokens             `ic:"amount" json:"amount"`
+	} `ic:"Burn,variant" json:"Burn,omitempty"`
 	Transfer *struct {
-		From    AccountIdentifier `ic:"from"`
-		To      AccountIdentifier `ic:"to"`
-		Amount  Tokens            `ic:"amount"`
-		Fee     Tokens            `ic:"fee"`
-		Spender *[]uint8          `ic:"spender,omitempty"`
-	} `ic:"Transfer,variant"`
+		From    AccountIdentifier `ic:"from" json:"from"`
+		To      AccountIdentifier `ic:"to" json:"to"`
+		Amount  Tokens            `ic:"amount" json:"amount"`
+		Fee     Tokens            `ic:"fee" json:"fee"`
+		Spender *[]uint8          `ic:"spender,omitempty" json:"spender,omitempty"`
+	} `ic:"Transfer,variant" json:"Transfer,omitempty"`
 	Approve *struct {
-		From              AccountIdentifier `ic:"from"`
-		Spender           AccountIdentifier `ic:"spender"`
-		AllowanceE8s      idl.Int           `ic:"allowance_e8s"`
-		Allowance         Tokens            `ic:"allowance"`
-		Fee               Tokens            `ic:"fee"`
-		ExpiresAt         *Timestamp        `ic:"expires_at,omitempty"`
-		ExpectedAllowance *Tokens           `ic:"expected_allowance,omitempty"`
-	} `ic:"Approve,variant"`
+		From              AccountIdentifier `ic:"from" json:"from"`
+		Spender           AccountIdentifier `ic:"spender" json:"spender"`
+		AllowanceE8s      idl.Int           `ic:"allowance_e8s" json:"allowance_e8s"`
+		Allowance         Tokens            `ic:"allowance" json:"allowance"`
+		Fee               Tokens            `ic:"fee" json:"fee"`
+		ExpiresAt         *Timestamp        `ic:"expires_at,omitempty" json:"expires_at,omitempty"`
+		ExpectedAllowance *Tokens           `ic:"expected_allowance,omitempty" json:"expected_allowance,omitempty"`
+	} `ic:"Approve,variant" json:"Approve,omitempty"`
 }
 
-type Transaction = struct {
-	Memo          Memo       `ic:"memo"`
-	Icrc1Memo     *[]byte    `ic:"icrc1_memo,omitempty"`
-	Operation     *Operation `ic:"operation,omitempty"`
-	CreatedAtTime Timestamp  `ic:"created_at_time"`
+type Transaction struct {
+	Memo          Memo       `ic:"memo" json:"memo"`
+	Icrc1Memo     *[]byte    `ic:"icrc1_memo,omitempty" json:"icrc1_memo,omitempty"`
+	Operation     *Operation `ic:"operation,omitempty" json:"operation,omitempty"`
+	CreatedAtTime Timestamp  `ic:"created_at_time" json:"created_at_time"`
 }
 
-type Block = struct {
-	ParentHash  *[]byte     `ic:"parent_hash,omitempty"`
-	Transaction Transaction `ic:"transaction"`
-	Timestamp   Timestamp   `ic:"timestamp"`
+type Block struct {
+	ParentHash  *[]byte     `ic:"parent_hash,omitempty" json:"parent_hash,omitempty"`
+	Transaction Transaction `ic:"transaction" json:"transaction"`
+	Timestamp   Timestamp   `ic:"timestamp" json:"timestamp"`
 }
 
-type GetBlocksArgs = struct {
-	Start  BlockIndex `ic:"start"`
-	Length uint64     `ic:"length"`
+type GetBlocksArgs struct {
+	Start  BlockIndex `ic:"start" json:"start"`
+	Length uint64     `ic:"length" json:"length"`
 }
 
-type BlockRange = struct {
-	Blocks []Block `ic:"blocks"`
+type BlockRange struct {
+	Blocks []Block `ic:"blocks" json:"blocks"`
 }
 
-type GetBlocksError = struct {
+type GetBlocksError struct {
 	BadFirstBlockIndex *struct {
-		RequestedIndex  BlockIndex `ic:"requested_index"`
-		FirstValidIndex BlockIndex `ic:"first_valid_index"`
-	} `ic:"BadFirstBlockIndex,variant"`
+		RequestedIndex  BlockIndex `ic:"requested_index" json:"requested_index"`
+		FirstValidIndex BlockIndex `ic:"first_valid_index" json:"first_valid_index"`
+	} `ic:"BadFirstBlockIndex,variant" json:"BadFirstBlockIndex,omitempty"`
 	Other *struct {
-		ErrorCode    uint64 `ic:"error_code"`
-		ErrorMessage string `ic:"error_message"`
-	} `ic:"Other,variant"`
+		ErrorCode    uint64 `ic:"error_code" json:"error_code"`
+		ErrorMessage string `ic:"error_message" json:"error_message"`
+	} `ic:"Other,variant" json:"Other,omitempty"`
 }
 
-type GetBlocksResult = struct {
-	Ok  *BlockRange     `ic:"Ok,variant"`
-	Err *GetBlocksError `ic:"Err,variant"`
+type GetBlocksResult struct {
+	Ok  *BlockRange     `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *GetBlocksError `ic:"Err,variant" json:"Err,omitempty"`
 }
 
-type GetEncodedBlocksResult = struct {
-	Ok  *[][]byte       `ic:"Ok,variant"`
-	Err *GetBlocksError `ic:"Err,variant"`
+type GetEncodedBlocksResult struct {
+	Ok  *[][]byte       `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *GetBlocksError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type ArchiveUpgradeArgument struct {
+	MaxMemorySizeBytes *uint64 `ic:"max_memory_size_bytes,omitempty" json:"max_memory_size_bytes,omitempty"`
 }
 
 // Agent is a client for the "archive" canister.
 type Agent struct {
-	a          *agent.Agent
-	canisterId principal.Principal
+	*agent.Agent
+	CanisterId principal.Principal
 }
 
 // NewAgent creates a new agent for the "archive" canister.
@@ -106,16 +110,16 @@ func NewAgent(canisterId principal.Principal, config agent.Config) (*Agent, erro
 		return nil, err
 	}
 	return &Agent{
-		a:          a,
-		canisterId: canisterId,
+		Agent:      a,
+		CanisterId: canisterId,
 	}, nil
 }
 
 // GetBlocks calls the "get_blocks" method on the "archive" canister.
 func (a Agent) GetBlocks(arg0 GetBlocksArgs) (*GetBlocksResult, error) {
 	var r0 GetBlocksResult
-	if err := a.a.Query(
-		a.canisterId,
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"get_blocks",
 		[]any{arg0},
 		[]any{&r0},
@@ -128,8 +132,8 @@ func (a Agent) GetBlocks(arg0 GetBlocksArgs) (*GetBlocksResult, error) {
 // GetEncodedBlocks calls the "get_encoded_blocks" method on the "archive" canister.
 func (a Agent) GetEncodedBlocks(arg0 GetBlocksArgs) (*GetEncodedBlocksResult, error) {
 	var r0 GetEncodedBlocksResult
-	if err := a.a.Query(
-		a.canisterId,
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"get_encoded_blocks",
 		[]any{arg0},
 		[]any{&r0},

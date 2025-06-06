@@ -8,388 +8,444 @@ import (
 	"github.com/aviate-labs/agent-go/principal"
 )
 
-type Tokens = struct {
-	E8s uint64 `ic:"e8s"`
+type Account struct {
+	Owner      principal.Principal `ic:"owner" json:"owner"`
+	Subaccount *[]byte             `ic:"subaccount,omitempty" json:"subaccount,omitempty"`
 }
 
-type TimeStamp = struct {
-	TimestampNanos uint64 `ic:"timestamp_nanos"`
+type AccountBalanceArgs struct {
+	Account string `ic:"account" json:"account"`
 }
 
-type AccountIdentifier = []byte
-
-type SubAccount = []byte
-
-type BlockIndex = uint64
-
-type Transaction = struct {
-	Memo          Memo       `ic:"memo"`
-	Icrc1Memo     *[]byte    `ic:"icrc1_memo,omitempty"`
-	Operation     *Operation `ic:"operation,omitempty"`
-	CreatedAtTime TimeStamp  `ic:"created_at_time"`
+type AccountIdentifierByteBuf struct {
+	Account []byte `ic:"account" json:"account"`
 }
 
-type Memo = uint64
-
-type TransferArgs = struct {
-	Memo           Memo              `ic:"memo"`
-	Amount         Tokens            `ic:"amount"`
-	Fee            Tokens            `ic:"fee"`
-	FromSubaccount *SubAccount       `ic:"from_subaccount,omitempty"`
-	To             AccountIdentifier `ic:"to"`
-	CreatedAtTime  *TimeStamp        `ic:"created_at_time,omitempty"`
+type Allowance struct {
+	Allowance idl.Nat `ic:"allowance" json:"allowance"`
+	ExpiresAt *uint64 `ic:"expires_at,omitempty" json:"expires_at,omitempty"`
 }
 
-type TransferError = struct {
-	BadFee *struct {
-		ExpectedFee Tokens `ic:"expected_fee"`
-	} `ic:"BadFee,variant"`
-	InsufficientFunds *struct {
-		Balance Tokens `ic:"balance"`
-	} `ic:"InsufficientFunds,variant"`
-	TxTooOld *struct {
-		AllowedWindowNanos uint64 `ic:"allowed_window_nanos"`
-	} `ic:"TxTooOld,variant"`
-	TxCreatedInFuture *struct{} `ic:"TxCreatedInFuture,variant"`
-	TxDuplicate       *struct {
-		DuplicateOf BlockIndex `ic:"duplicate_of"`
-	} `ic:"TxDuplicate,variant"`
+type AllowanceArgs struct {
+	Account Account `ic:"account" json:"account"`
+	Spender Account `ic:"spender" json:"spender"`
 }
 
-type TransferResult = struct {
-	Ok  *BlockIndex    `ic:"Ok,variant"`
-	Err *TransferError `ic:"Err,variant"`
+type ApproveArgs struct {
+	Fee               *idl.Nat `ic:"fee,omitempty" json:"fee,omitempty"`
+	Memo              *[]byte  `ic:"memo,omitempty" json:"memo,omitempty"`
+	FromSubaccount    *[]byte  `ic:"from_subaccount,omitempty" json:"from_subaccount,omitempty"`
+	CreatedAtTime     *uint64  `ic:"created_at_time,omitempty" json:"created_at_time,omitempty"`
+	Amount            idl.Nat  `ic:"amount" json:"amount"`
+	ExpectedAllowance *idl.Nat `ic:"expected_allowance,omitempty" json:"expected_allowance,omitempty"`
+	ExpiresAt         *uint64  `ic:"expires_at,omitempty" json:"expires_at,omitempty"`
+	Spender           Account  `ic:"spender" json:"spender"`
 }
 
-type AccountBalanceArgs = struct {
-	Account AccountIdentifier `ic:"account"`
-}
-
-type TransferFeeArg = struct {
-}
-
-type TransferFee = struct {
-	TransferFee Tokens `ic:"transfer_fee"`
-}
-
-type GetBlocksArgs = struct {
-	Start  BlockIndex `ic:"start"`
-	Length uint64     `ic:"length"`
-}
-
-type Operation = struct {
-	Mint *struct {
-		To     AccountIdentifier `ic:"to"`
-		Amount Tokens            `ic:"amount"`
-	} `ic:"Mint,variant"`
-	Burn *struct {
-		From    AccountIdentifier  `ic:"from"`
-		Spender *AccountIdentifier `ic:"spender,omitempty"`
-		Amount  Tokens             `ic:"amount"`
-	} `ic:"Burn,variant"`
-	Transfer *struct {
-		From    AccountIdentifier `ic:"from"`
-		To      AccountIdentifier `ic:"to"`
-		Amount  Tokens            `ic:"amount"`
-		Fee     Tokens            `ic:"fee"`
-		Spender *[]uint8          `ic:"spender,omitempty"`
-	} `ic:"Transfer,variant"`
-	Approve *struct {
-		From              AccountIdentifier `ic:"from"`
-		Spender           AccountIdentifier `ic:"spender"`
-		AllowanceE8s      idl.Int           `ic:"allowance_e8s"`
-		Allowance         Tokens            `ic:"allowance"`
-		Fee               Tokens            `ic:"fee"`
-		ExpiresAt         *TimeStamp        `ic:"expires_at,omitempty"`
-		ExpectedAllowance *Tokens           `ic:"expected_allowance,omitempty"`
-	} `ic:"Approve,variant"`
-}
-
-type Block = struct {
-	ParentHash  *[]byte     `ic:"parent_hash,omitempty"`
-	Transaction Transaction `ic:"transaction"`
-	Timestamp   TimeStamp   `ic:"timestamp"`
-}
-
-type BlockRange = struct {
-	Blocks []Block `ic:"blocks"`
-}
-
-type QueryArchiveError = struct {
-	BadFirstBlockIndex *struct {
-		RequestedIndex  BlockIndex `ic:"requested_index"`
-		FirstValidIndex BlockIndex `ic:"first_valid_index"`
-	} `ic:"BadFirstBlockIndex,variant"`
-	Other *struct {
-		ErrorCode    uint64 `ic:"error_code"`
-		ErrorMessage string `ic:"error_message"`
-	} `ic:"Other,variant"`
-}
-
-type QueryArchiveResult = struct {
-	Ok  *BlockRange        `ic:"Ok,variant"`
-	Err *QueryArchiveError `ic:"Err,variant"`
-}
-
-type QueryArchiveFn = struct { /* NOT SUPPORTED */
-}
-
-type QueryBlocksResponse = struct {
-	ChainLength     uint64                `ic:"chain_length"`
-	Certificate     *[]byte               `ic:"certificate,omitempty"`
-	Blocks          []Block               `ic:"blocks"`
-	FirstBlockIndex BlockIndex            `ic:"first_block_index"`
-	ArchivedBlocks  []ArchivedBlocksRange `ic:"archived_blocks"`
-}
-
-type ArchivedBlocksRange = struct {
-	Start    BlockIndex     `ic:"start"`
-	Length   uint64         `ic:"length"`
-	Callback QueryArchiveFn `ic:"callback"`
-}
-
-type ArchivedEncodedBlocksRange = struct {
-	Callback struct { /* NOT SUPPORTED */
-	} `ic:"callback"`
-	Start  uint64 `ic:"start"`
-	Length uint64 `ic:"length"`
-}
-
-type QueryEncodedBlocksResponse = struct {
-	Certificate     *[]byte                      `ic:"certificate,omitempty"`
-	Blocks          [][]byte                     `ic:"blocks"`
-	ChainLength     uint64                       `ic:"chain_length"`
-	FirstBlockIndex uint64                       `ic:"first_block_index"`
-	ArchivedBlocks  []ArchivedEncodedBlocksRange `ic:"archived_blocks"`
-}
-
-type Archive = struct {
-	CanisterId principal.Principal `ic:"canister_id"`
-}
-
-type Archives = struct {
-	Archives []Archive `ic:"archives"`
-}
-
-type Duration = struct {
-	Secs  uint64 `ic:"secs"`
-	Nanos uint32 `ic:"nanos"`
-}
-
-type ArchiveOptions = struct {
-	TriggerThreshold           uint64              `ic:"trigger_threshold"`
-	NumBlocksToArchive         uint64              `ic:"num_blocks_to_archive"`
-	NodeMaxMemorySizeBytes     *uint64             `ic:"node_max_memory_size_bytes,omitempty"`
-	MaxMessageSizeBytes        *uint64             `ic:"max_message_size_bytes,omitempty"`
-	ControllerId               principal.Principal `ic:"controller_id"`
-	CyclesForArchiveCreation   *uint64             `ic:"cycles_for_archive_creation,omitempty"`
-	MaxTransactionsPerResponse *uint64             `ic:"max_transactions_per_response,omitempty"`
-}
-
-type TextAccountIdentifier = string
-
-type SendArgs = struct {
-	Memo           Memo                  `ic:"memo"`
-	Amount         Tokens                `ic:"amount"`
-	Fee            Tokens                `ic:"fee"`
-	FromSubaccount *SubAccount           `ic:"from_subaccount,omitempty"`
-	To             TextAccountIdentifier `ic:"to"`
-	CreatedAtTime  *TimeStamp            `ic:"created_at_time,omitempty"`
-}
-
-type AccountBalanceArgsDfx = struct {
-	Account TextAccountIdentifier `ic:"account"`
-}
-
-type FeatureFlags = struct {
-	Icrc2 bool `ic:"icrc2"`
-}
-
-type InitArgs = struct {
-	MintingAccount      TextAccountIdentifier `ic:"minting_account"`
-	Icrc1MintingAccount *Account              `ic:"icrc1_minting_account,omitempty"`
-	InitialValues       []struct {
-		field0 TextAccountIdentifier `ic:"field0"`
-		field1 Tokens                `ic:"field1"`
-	} `ic:"initial_values"`
-	MaxMessageSizeBytes          *uint64               `ic:"max_message_size_bytes,omitempty"`
-	TransactionWindow            *Duration             `ic:"transaction_window,omitempty"`
-	ArchiveOptions               *ArchiveOptions       `ic:"archive_options,omitempty"`
-	SendWhitelist                []principal.Principal `ic:"send_whitelist"`
-	TransferFee                  *Tokens               `ic:"transfer_fee,omitempty"`
-	TokenSymbol                  *string               `ic:"token_symbol,omitempty"`
-	TokenName                    *string               `ic:"token_name,omitempty"`
-	FeatureFlags                 *FeatureFlags         `ic:"feature_flags,omitempty"`
-	MaximumNumberOfAccounts      *uint64               `ic:"maximum_number_of_accounts,omitempty"`
-	AccountsOverflowTrimQuantity *uint64               `ic:"accounts_overflow_trim_quantity,omitempty"`
-}
-
-type Icrc1BlockIndex = idl.Nat
-
-type Icrc1Timestamp = uint64
-
-type Icrc1Tokens = idl.Nat
-
-type Account = struct {
-	Owner      principal.Principal `ic:"owner"`
-	Subaccount *SubAccount         `ic:"subaccount,omitempty"`
-}
-
-type TransferArg = struct {
-	FromSubaccount *SubAccount     `ic:"from_subaccount,omitempty"`
-	To             Account         `ic:"to"`
-	Amount         Icrc1Tokens     `ic:"amount"`
-	Fee            *Icrc1Tokens    `ic:"fee,omitempty"`
-	Memo           *[]byte         `ic:"memo,omitempty"`
-	CreatedAtTime  *Icrc1Timestamp `ic:"created_at_time,omitempty"`
-}
-
-type Icrc1TransferError = struct {
-	BadFee *struct {
-		ExpectedFee Icrc1Tokens `ic:"expected_fee"`
-	} `ic:"BadFee,variant"`
-	BadBurn *struct {
-		MinBurnAmount Icrc1Tokens `ic:"min_burn_amount"`
-	} `ic:"BadBurn,variant"`
-	InsufficientFunds *struct {
-		Balance Icrc1Tokens `ic:"balance"`
-	} `ic:"InsufficientFunds,variant"`
-	TooOld          *struct{} `ic:"TooOld,variant"`
-	CreatedInFuture *struct {
-		LedgerTime uint64 `ic:"ledger_time"`
-	} `ic:"CreatedInFuture,variant"`
-	TemporarilyUnavailable *struct{} `ic:"TemporarilyUnavailable,variant"`
-	Duplicate              *struct {
-		DuplicateOf Icrc1BlockIndex `ic:"duplicate_of"`
-	} `ic:"Duplicate,variant"`
+type ApproveError struct {
 	GenericError *struct {
-		ErrorCode idl.Nat `ic:"error_code"`
-		Message   string  `ic:"message"`
-	} `ic:"GenericError,variant"`
-}
-
-type Icrc1TransferResult = struct {
-	Ok  *Icrc1BlockIndex    `ic:"Ok,variant"`
-	Err *Icrc1TransferError `ic:"Err,variant"`
-}
-
-type Value = struct {
-	Nat  *idl.Nat `ic:"Nat,variant"`
-	Int  *idl.Int `ic:"Int,variant"`
-	Text *string  `ic:"Text,variant"`
-	Blob *[]byte  `ic:"Blob,variant"`
-}
-
-type UpgradeArgs = struct {
-	MaximumNumberOfAccounts *uint64       `ic:"maximum_number_of_accounts,omitempty"`
-	Icrc1MintingAccount     *Account      `ic:"icrc1_minting_account,omitempty"`
-	FeatureFlags            *FeatureFlags `ic:"feature_flags,omitempty"`
-}
-
-type LedgerCanisterPayload = struct {
-	Init    *InitArgs     `ic:"Init,variant"`
-	Upgrade **UpgradeArgs `ic:"Upgrade,variant"`
-}
-
-type ApproveArgs = struct {
-	FromSubaccount    *SubAccount     `ic:"from_subaccount,omitempty"`
-	Spender           Account         `ic:"spender"`
-	Amount            Icrc1Tokens     `ic:"amount"`
-	ExpectedAllowance *Icrc1Tokens    `ic:"expected_allowance,omitempty"`
-	ExpiresAt         *Icrc1Timestamp `ic:"expires_at,omitempty"`
-	Fee               *Icrc1Tokens    `ic:"fee,omitempty"`
-	Memo              *[]byte         `ic:"memo,omitempty"`
-	CreatedAtTime     *Icrc1Timestamp `ic:"created_at_time,omitempty"`
-}
-
-type ApproveError = struct {
+		Message   string  `ic:"message" json:"message"`
+		ErrorCode idl.Nat `ic:"error_code" json:"error_code"`
+	} `ic:"GenericError,variant" json:"GenericError,omitempty"`
+	TemporarilyUnavailable *idl.Null `ic:"TemporarilyUnavailable,variant" json:"TemporarilyUnavailable,omitempty"`
+	Duplicate              *struct {
+		DuplicateOf idl.Nat `ic:"duplicate_of" json:"duplicate_of"`
+	} `ic:"Duplicate,variant" json:"Duplicate,omitempty"`
 	BadFee *struct {
-		ExpectedFee Icrc1Tokens `ic:"expected_fee"`
-	} `ic:"BadFee,variant"`
-	InsufficientFunds *struct {
-		Balance Icrc1Tokens `ic:"balance"`
-	} `ic:"InsufficientFunds,variant"`
+		ExpectedFee idl.Nat `ic:"expected_fee" json:"expected_fee"`
+	} `ic:"BadFee,variant" json:"BadFee,omitempty"`
 	AllowanceChanged *struct {
-		CurrentAllowance Icrc1Tokens `ic:"current_allowance"`
-	} `ic:"AllowanceChanged,variant"`
+		CurrentAllowance idl.Nat `ic:"current_allowance" json:"current_allowance"`
+	} `ic:"AllowanceChanged,variant" json:"AllowanceChanged,omitempty"`
+	CreatedInFuture *struct {
+		LedgerTime uint64 `ic:"ledger_time" json:"ledger_time"`
+	} `ic:"CreatedInFuture,variant" json:"CreatedInFuture,omitempty"`
+	TooOld  *idl.Null `ic:"TooOld,variant" json:"TooOld,omitempty"`
 	Expired *struct {
-		LedgerTime uint64 `ic:"ledger_time"`
-	} `ic:"Expired,variant"`
-	TooOld          *struct{} `ic:"TooOld,variant"`
-	CreatedInFuture *struct {
-		LedgerTime uint64 `ic:"ledger_time"`
-	} `ic:"CreatedInFuture,variant"`
-	Duplicate *struct {
-		DuplicateOf Icrc1BlockIndex `ic:"duplicate_of"`
-	} `ic:"Duplicate,variant"`
-	TemporarilyUnavailable *struct{} `ic:"TemporarilyUnavailable,variant"`
-	GenericError           *struct {
-		ErrorCode idl.Nat `ic:"error_code"`
-		Message   string  `ic:"message"`
-	} `ic:"GenericError,variant"`
-}
-
-type ApproveResult = struct {
-	Ok  *Icrc1BlockIndex `ic:"Ok,variant"`
-	Err *ApproveError    `ic:"Err,variant"`
-}
-
-type AllowanceArgs = struct {
-	Account Account `ic:"account"`
-	Spender Account `ic:"spender"`
-}
-
-type Allowance = struct {
-	Allowance Icrc1Tokens     `ic:"allowance"`
-	ExpiresAt *Icrc1Timestamp `ic:"expires_at,omitempty"`
-}
-
-type TransferFromArgs = struct {
-	SpenderSubaccount *SubAccount     `ic:"spender_subaccount,omitempty"`
-	From              Account         `ic:"from"`
-	To                Account         `ic:"to"`
-	Amount            Icrc1Tokens     `ic:"amount"`
-	Fee               *Icrc1Tokens    `ic:"fee,omitempty"`
-	Memo              *[]byte         `ic:"memo,omitempty"`
-	CreatedAtTime     *Icrc1Timestamp `ic:"created_at_time,omitempty"`
-}
-
-type TransferFromResult = struct {
-	Ok  *Icrc1BlockIndex   `ic:"Ok,variant"`
-	Err *TransferFromError `ic:"Err,variant"`
-}
-
-type TransferFromError = struct {
-	BadFee *struct {
-		ExpectedFee Icrc1Tokens `ic:"expected_fee"`
-	} `ic:"BadFee,variant"`
-	BadBurn *struct {
-		MinBurnAmount Icrc1Tokens `ic:"min_burn_amount"`
-	} `ic:"BadBurn,variant"`
+		LedgerTime uint64 `ic:"ledger_time" json:"ledger_time"`
+	} `ic:"Expired,variant" json:"Expired,omitempty"`
 	InsufficientFunds *struct {
-		Balance Icrc1Tokens `ic:"balance"`
-	} `ic:"InsufficientFunds,variant"`
-	InsufficientAllowance *struct {
-		Allowance Icrc1Tokens `ic:"allowance"`
-	} `ic:"InsufficientAllowance,variant"`
-	TooOld          *struct{} `ic:"TooOld,variant"`
-	CreatedInFuture *struct {
-		LedgerTime Icrc1Timestamp `ic:"ledger_time"`
-	} `ic:"CreatedInFuture,variant"`
+		Balance idl.Nat `ic:"balance" json:"balance"`
+	} `ic:"InsufficientFunds,variant" json:"InsufficientFunds,omitempty"`
+}
+
+type ArchiveInfo struct {
+	CanisterId principal.Principal `ic:"canister_id" json:"canister_id"`
+}
+
+type ArchiveOptions struct {
+	NumBlocksToArchive         uint64                 `ic:"num_blocks_to_archive" json:"num_blocks_to_archive"`
+	MaxTransactionsPerResponse *uint64                `ic:"max_transactions_per_response,omitempty" json:"max_transactions_per_response,omitempty"`
+	TriggerThreshold           uint64                 `ic:"trigger_threshold" json:"trigger_threshold"`
+	MoreControllerIds          *[]principal.Principal `ic:"more_controller_ids,omitempty" json:"more_controller_ids,omitempty"`
+	MaxMessageSizeBytes        *uint64                `ic:"max_message_size_bytes,omitempty" json:"max_message_size_bytes,omitempty"`
+	CyclesForArchiveCreation   *uint64                `ic:"cycles_for_archive_creation,omitempty" json:"cycles_for_archive_creation,omitempty"`
+	NodeMaxMemorySizeBytes     *uint64                `ic:"node_max_memory_size_bytes,omitempty" json:"node_max_memory_size_bytes,omitempty"`
+	ControllerId               principal.Principal    `ic:"controller_id" json:"controller_id"`
+}
+
+type ArchivedBlocksRange struct {
+	Callback idl.Function `ic:"callback" json:"callback"`
+	Start    uint64       `ic:"start" json:"start"`
+	Length   uint64       `ic:"length" json:"length"`
+}
+
+type ArchivedEncodedBlocksRange struct {
+	Callback idl.Function `ic:"callback" json:"callback"`
+	Start    uint64       `ic:"start" json:"start"`
+	Length   uint64       `ic:"length" json:"length"`
+}
+
+type Archives struct {
+	Archives []ArchiveInfo `ic:"archives" json:"archives"`
+}
+
+type BlockRange struct {
+	Blocks []CandidBlock `ic:"blocks" json:"blocks"`
+}
+
+type CandidBlock struct {
+	Transaction CandidTransaction `ic:"transaction" json:"transaction"`
+	Timestamp   TimeStamp         `ic:"timestamp" json:"timestamp"`
+	ParentHash  *[]byte           `ic:"parent_hash,omitempty" json:"parent_hash,omitempty"`
+}
+
+type CandidOperation struct {
+	Approve *struct {
+		Fee               Tokens     `ic:"fee" json:"fee"`
+		From              []byte     `ic:"from" json:"from"`
+		AllowanceE8s      idl.Int    `ic:"allowance_e8s" json:"allowance_e8s"`
+		Allowance         Tokens     `ic:"allowance" json:"allowance"`
+		ExpectedAllowance *Tokens    `ic:"expected_allowance,omitempty" json:"expected_allowance,omitempty"`
+		ExpiresAt         *TimeStamp `ic:"expires_at,omitempty" json:"expires_at,omitempty"`
+		Spender           []byte     `ic:"spender" json:"spender"`
+	} `ic:"Approve,variant" json:"Approve,omitempty"`
+	Burn *struct {
+		From    []byte  `ic:"from" json:"from"`
+		Amount  Tokens  `ic:"amount" json:"amount"`
+		Spender *[]byte `ic:"spender,omitempty" json:"spender,omitempty"`
+	} `ic:"Burn,variant" json:"Burn,omitempty"`
+	Mint *struct {
+		To     []byte `ic:"to" json:"to"`
+		Amount Tokens `ic:"amount" json:"amount"`
+	} `ic:"Mint,variant" json:"Mint,omitempty"`
+	Transfer *struct {
+		To      []byte  `ic:"to" json:"to"`
+		Fee     Tokens  `ic:"fee" json:"fee"`
+		From    []byte  `ic:"from" json:"from"`
+		Amount  Tokens  `ic:"amount" json:"amount"`
+		Spender *[]byte `ic:"spender,omitempty" json:"spender,omitempty"`
+	} `ic:"Transfer,variant" json:"Transfer,omitempty"`
+}
+
+type CandidTransaction struct {
+	Memo          uint64           `ic:"memo" json:"memo"`
+	Icrc1Memo     *[]byte          `ic:"icrc1_memo,omitempty" json:"icrc1_memo,omitempty"`
+	Operation     *CandidOperation `ic:"operation,omitempty" json:"operation,omitempty"`
+	CreatedAtTime TimeStamp        `ic:"created_at_time" json:"created_at_time"`
+}
+
+type ConsentInfo struct {
+	Metadata       ConsentMessageMetadata `ic:"metadata" json:"metadata"`
+	ConsentMessage ConsentMessage         `ic:"consent_message" json:"consent_message"`
+}
+
+type ConsentMessage struct {
+	LineDisplayMessage *struct {
+		Pages []LineDisplayPage `ic:"pages" json:"pages"`
+	} `ic:"LineDisplayMessage,variant" json:"LineDisplayMessage,omitempty"`
+	GenericDisplayMessage *string `ic:"GenericDisplayMessage,variant" json:"GenericDisplayMessage,omitempty"`
+}
+
+type ConsentMessageMetadata struct {
+	UtcOffsetMinutes *int16 `ic:"utc_offset_minutes,omitempty" json:"utc_offset_minutes,omitempty"`
+	Language         string `ic:"language" json:"language"`
+}
+
+type ConsentMessageRequest struct {
+	Arg             []byte             `ic:"arg" json:"arg"`
+	Method          string             `ic:"method" json:"method"`
+	UserPreferences ConsentMessageSpec `ic:"user_preferences" json:"user_preferences"`
+}
+
+type ConsentMessageSpec struct {
+	Metadata   ConsentMessageMetadata `ic:"metadata" json:"metadata"`
+	DeviceSpec *DisplayMessageType    `ic:"device_spec,omitempty" json:"device_spec,omitempty"`
+}
+
+type Decimals struct {
+	Decimals uint32 `ic:"decimals" json:"decimals"`
+}
+
+type DisplayMessageType struct {
+	GenericDisplay *idl.Null `ic:"GenericDisplay,variant" json:"GenericDisplay,omitempty"`
+	LineDisplay    *struct {
+		CharactersPerLine uint16 `ic:"characters_per_line" json:"characters_per_line"`
+		LinesPerPage      uint16 `ic:"lines_per_page" json:"lines_per_page"`
+	} `ic:"LineDisplay,variant" json:"LineDisplay,omitempty"`
+}
+
+type Duration struct {
+	Secs  uint64 `ic:"secs" json:"secs"`
+	Nanos uint32 `ic:"nanos" json:"nanos"`
+}
+
+type ErrorInfo struct {
+	Description string `ic:"description" json:"description"`
+}
+
+type FeatureFlags struct {
+	Icrc2 bool `ic:"icrc2" json:"icrc2"`
+}
+
+type GetBlocksArgs struct {
+	Start  uint64 `ic:"start" json:"start"`
+	Length uint64 `ic:"length" json:"length"`
+}
+
+type GetBlocksError struct {
+	BadFirstBlockIndex *struct {
+		RequestedIndex  uint64 `ic:"requested_index" json:"requested_index"`
+		FirstValidIndex uint64 `ic:"first_valid_index" json:"first_valid_index"`
+	} `ic:"BadFirstBlockIndex,variant" json:"BadFirstBlockIndex,omitempty"`
+	Other *struct {
+		ErrorMessage string `ic:"error_message" json:"error_message"`
+		ErrorCode    uint64 `ic:"error_code" json:"error_code"`
+	} `ic:"Other,variant" json:"Other,omitempty"`
+}
+
+type Icrc21Error struct {
+	GenericError *struct {
+		Description string  `ic:"description" json:"description"`
+		ErrorCode   idl.Nat `ic:"error_code" json:"error_code"`
+	} `ic:"GenericError,variant" json:"GenericError,omitempty"`
+	InsufficientPayment       *ErrorInfo `ic:"InsufficientPayment,variant" json:"InsufficientPayment,omitempty"`
+	UnsupportedCanisterCall   *ErrorInfo `ic:"UnsupportedCanisterCall,variant" json:"UnsupportedCanisterCall,omitempty"`
+	ConsentMessageUnavailable *ErrorInfo `ic:"ConsentMessageUnavailable,variant" json:"ConsentMessageUnavailable,omitempty"`
+}
+
+type InitArgs struct {
+	SendWhitelist       []principal.Principal `ic:"send_whitelist" json:"send_whitelist"`
+	TokenSymbol         *string               `ic:"token_symbol,omitempty" json:"token_symbol,omitempty"`
+	TransferFee         *Tokens               `ic:"transfer_fee,omitempty" json:"transfer_fee,omitempty"`
+	MintingAccount      string                `ic:"minting_account" json:"minting_account"`
+	TransactionWindow   *Duration             `ic:"transaction_window,omitempty" json:"transaction_window,omitempty"`
+	MaxMessageSizeBytes *uint64               `ic:"max_message_size_bytes,omitempty" json:"max_message_size_bytes,omitempty"`
+	Icrc1MintingAccount *Account              `ic:"icrc1_minting_account,omitempty" json:"icrc1_minting_account,omitempty"`
+	ArchiveOptions      *ArchiveOptions       `ic:"archive_options,omitempty" json:"archive_options,omitempty"`
+	InitialValues       []struct {
+		Field0 string `ic:"0,tuple" json:"0,tuple"`
+		Field1 Tokens `ic:"1,tuple" json:"1,tuple"`
+	} `ic:"initial_values" json:"initial_values"`
+	TokenName    *string       `ic:"token_name,omitempty" json:"token_name,omitempty"`
+	FeatureFlags *FeatureFlags `ic:"feature_flags,omitempty" json:"feature_flags,omitempty"`
+}
+
+type LedgerCanisterPayload struct {
+	Upgrade **UpgradeArgs `ic:"Upgrade,variant" json:"Upgrade,omitempty"`
+	Init    *InitArgs     `ic:"Init,variant" json:"Init,omitempty"`
+}
+
+type LineDisplayPage struct {
+	Lines []string `ic:"lines" json:"lines"`
+}
+
+type MetadataValue struct {
+	Int  *idl.Int `ic:"Int,variant" json:"Int,omitempty"`
+	Nat  *idl.Nat `ic:"Nat,variant" json:"Nat,omitempty"`
+	Blob *[]byte  `ic:"Blob,variant" json:"Blob,omitempty"`
+	Text *string  `ic:"Text,variant" json:"Text,omitempty"`
+}
+
+type Name struct {
+	Name string `ic:"name" json:"name"`
+}
+
+type QueryBlocksResponse struct {
+	Certificate     *[]byte               `ic:"certificate,omitempty" json:"certificate,omitempty"`
+	Blocks          []CandidBlock         `ic:"blocks" json:"blocks"`
+	ChainLength     uint64                `ic:"chain_length" json:"chain_length"`
+	FirstBlockIndex uint64                `ic:"first_block_index" json:"first_block_index"`
+	ArchivedBlocks  []ArchivedBlocksRange `ic:"archived_blocks" json:"archived_blocks"`
+}
+
+type QueryEncodedBlocksResponse struct {
+	Certificate     *[]byte                      `ic:"certificate,omitempty" json:"certificate,omitempty"`
+	Blocks          [][]byte                     `ic:"blocks" json:"blocks"`
+	ChainLength     uint64                       `ic:"chain_length" json:"chain_length"`
+	FirstBlockIndex uint64                       `ic:"first_block_index" json:"first_block_index"`
+	ArchivedBlocks  []ArchivedEncodedBlocksRange `ic:"archived_blocks" json:"archived_blocks"`
+}
+
+type Result struct {
+	Ok  *idl.Nat       `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *TransferError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result1 struct {
+	Ok  *ConsentInfo `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *Icrc21Error `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result2 struct {
+	Ok  *idl.Nat      `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *ApproveError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result3 struct {
+	Ok  *idl.Nat           `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *TransferFromError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result4 struct {
+	Ok  *BlockRange     `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *GetBlocksError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result5 struct {
+	Ok  *[][]byte       `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *GetBlocksError `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type Result6 struct {
+	Ok  *uint64         `ic:"Ok,variant" json:"Ok,omitempty"`
+	Err *TransferError1 `ic:"Err,variant" json:"Err,omitempty"`
+}
+
+type SendArgs struct {
+	To             string     `ic:"to" json:"to"`
+	Fee            Tokens     `ic:"fee" json:"fee"`
+	Memo           uint64     `ic:"memo" json:"memo"`
+	FromSubaccount *[]byte    `ic:"from_subaccount,omitempty" json:"from_subaccount,omitempty"`
+	CreatedAtTime  *TimeStamp `ic:"created_at_time,omitempty" json:"created_at_time,omitempty"`
+	Amount         Tokens     `ic:"amount" json:"amount"`
+}
+
+type StandardRecord struct {
+	Url  string `ic:"url" json:"url"`
+	Name string `ic:"name" json:"name"`
+}
+
+type Symbol struct {
+	Symbol string `ic:"symbol" json:"symbol"`
+}
+
+type TimeStamp struct {
+	TimestampNanos uint64 `ic:"timestamp_nanos" json:"timestamp_nanos"`
+}
+
+type Tokens struct {
+	E8s uint64 `ic:"e8s" json:"e8s"`
+}
+
+type TransferArg struct {
+	To             Account  `ic:"to" json:"to"`
+	Fee            *idl.Nat `ic:"fee,omitempty" json:"fee,omitempty"`
+	Memo           *[]byte  `ic:"memo,omitempty" json:"memo,omitempty"`
+	FromSubaccount *[]byte  `ic:"from_subaccount,omitempty" json:"from_subaccount,omitempty"`
+	CreatedAtTime  *uint64  `ic:"created_at_time,omitempty" json:"created_at_time,omitempty"`
+	Amount         idl.Nat  `ic:"amount" json:"amount"`
+}
+
+type TransferArgs struct {
+	To             []byte     `ic:"to" json:"to"`
+	Fee            Tokens     `ic:"fee" json:"fee"`
+	Memo           uint64     `ic:"memo" json:"memo"`
+	FromSubaccount *[]byte    `ic:"from_subaccount,omitempty" json:"from_subaccount,omitempty"`
+	CreatedAtTime  *TimeStamp `ic:"created_at_time,omitempty" json:"created_at_time,omitempty"`
+	Amount         Tokens     `ic:"amount" json:"amount"`
+}
+
+type TransferError struct {
+	GenericError *struct {
+		Message   string  `ic:"message" json:"message"`
+		ErrorCode idl.Nat `ic:"error_code" json:"error_code"`
+	} `ic:"GenericError,variant" json:"GenericError,omitempty"`
+	TemporarilyUnavailable *idl.Null `ic:"TemporarilyUnavailable,variant" json:"TemporarilyUnavailable,omitempty"`
+	BadBurn                *struct {
+		MinBurnAmount idl.Nat `ic:"min_burn_amount" json:"min_burn_amount"`
+	} `ic:"BadBurn,variant" json:"BadBurn,omitempty"`
 	Duplicate *struct {
-		DuplicateOf Icrc1BlockIndex `ic:"duplicate_of"`
-	} `ic:"Duplicate,variant"`
-	TemporarilyUnavailable *struct{} `ic:"TemporarilyUnavailable,variant"`
-	GenericError           *struct {
-		ErrorCode idl.Nat `ic:"error_code"`
-		Message   string  `ic:"message"`
-	} `ic:"GenericError,variant"`
+		DuplicateOf idl.Nat `ic:"duplicate_of" json:"duplicate_of"`
+	} `ic:"Duplicate,variant" json:"Duplicate,omitempty"`
+	BadFee *struct {
+		ExpectedFee idl.Nat `ic:"expected_fee" json:"expected_fee"`
+	} `ic:"BadFee,variant" json:"BadFee,omitempty"`
+	CreatedInFuture *struct {
+		LedgerTime uint64 `ic:"ledger_time" json:"ledger_time"`
+	} `ic:"CreatedInFuture,variant" json:"CreatedInFuture,omitempty"`
+	TooOld            *idl.Null `ic:"TooOld,variant" json:"TooOld,omitempty"`
+	InsufficientFunds *struct {
+		Balance idl.Nat `ic:"balance" json:"balance"`
+	} `ic:"InsufficientFunds,variant" json:"InsufficientFunds,omitempty"`
+}
+
+type TransferError1 struct {
+	TxTooOld *struct {
+		AllowedWindowNanos uint64 `ic:"allowed_window_nanos" json:"allowed_window_nanos"`
+	} `ic:"TxTooOld,variant" json:"TxTooOld,omitempty"`
+	BadFee *struct {
+		ExpectedFee Tokens `ic:"expected_fee" json:"expected_fee"`
+	} `ic:"BadFee,variant" json:"BadFee,omitempty"`
+	TxDuplicate *struct {
+		DuplicateOf uint64 `ic:"duplicate_of" json:"duplicate_of"`
+	} `ic:"TxDuplicate,variant" json:"TxDuplicate,omitempty"`
+	TxCreatedInFuture *idl.Null `ic:"TxCreatedInFuture,variant" json:"TxCreatedInFuture,omitempty"`
+	InsufficientFunds *struct {
+		Balance Tokens `ic:"balance" json:"balance"`
+	} `ic:"InsufficientFunds,variant" json:"InsufficientFunds,omitempty"`
+}
+
+type TransferFee struct {
+	TransferFee Tokens `ic:"transfer_fee" json:"transfer_fee"`
+}
+
+type TransferFromArgs struct {
+	To                Account  `ic:"to" json:"to"`
+	Fee               *idl.Nat `ic:"fee,omitempty" json:"fee,omitempty"`
+	SpenderSubaccount *[]byte  `ic:"spender_subaccount,omitempty" json:"spender_subaccount,omitempty"`
+	From              Account  `ic:"from" json:"from"`
+	Memo              *[]byte  `ic:"memo,omitempty" json:"memo,omitempty"`
+	CreatedAtTime     *uint64  `ic:"created_at_time,omitempty" json:"created_at_time,omitempty"`
+	Amount            idl.Nat  `ic:"amount" json:"amount"`
+}
+
+type TransferFromError struct {
+	GenericError *struct {
+		Message   string  `ic:"message" json:"message"`
+		ErrorCode idl.Nat `ic:"error_code" json:"error_code"`
+	} `ic:"GenericError,variant" json:"GenericError,omitempty"`
+	TemporarilyUnavailable *idl.Null `ic:"TemporarilyUnavailable,variant" json:"TemporarilyUnavailable,omitempty"`
+	InsufficientAllowance  *struct {
+		Allowance idl.Nat `ic:"allowance" json:"allowance"`
+	} `ic:"InsufficientAllowance,variant" json:"InsufficientAllowance,omitempty"`
+	BadBurn *struct {
+		MinBurnAmount idl.Nat `ic:"min_burn_amount" json:"min_burn_amount"`
+	} `ic:"BadBurn,variant" json:"BadBurn,omitempty"`
+	Duplicate *struct {
+		DuplicateOf idl.Nat `ic:"duplicate_of" json:"duplicate_of"`
+	} `ic:"Duplicate,variant" json:"Duplicate,omitempty"`
+	BadFee *struct {
+		ExpectedFee idl.Nat `ic:"expected_fee" json:"expected_fee"`
+	} `ic:"BadFee,variant" json:"BadFee,omitempty"`
+	CreatedInFuture *struct {
+		LedgerTime uint64 `ic:"ledger_time" json:"ledger_time"`
+	} `ic:"CreatedInFuture,variant" json:"CreatedInFuture,omitempty"`
+	TooOld            *idl.Null `ic:"TooOld,variant" json:"TooOld,omitempty"`
+	InsufficientFunds *struct {
+		Balance idl.Nat `ic:"balance" json:"balance"`
+	} `ic:"InsufficientFunds,variant" json:"InsufficientFunds,omitempty"`
+}
+
+type UpgradeArgs struct {
+	Icrc1MintingAccount *Account      `ic:"icrc1_minting_account,omitempty" json:"icrc1_minting_account,omitempty"`
+	FeatureFlags        *FeatureFlags `ic:"feature_flags,omitempty" json:"feature_flags,omitempty"`
 }
 
 // Agent is a client for the "ledger" canister.
 type Agent struct {
-	a          *agent.Agent
-	canisterId principal.Principal
+	*agent.Agent
+	CanisterId principal.Principal
 }
 
 // NewAgent creates a new agent for the "ledger" canister.
@@ -399,30 +455,16 @@ func NewAgent(canisterId principal.Principal, config agent.Config) (*Agent, erro
 		return nil, err
 	}
 	return &Agent{
-		a:          a,
-		canisterId: canisterId,
+		Agent:      a,
+		CanisterId: canisterId,
 	}, nil
 }
 
-// Transfer calls the "transfer" method on the "ledger" canister.
-func (a Agent) Transfer(arg0 TransferArgs) (*TransferResult, error) {
-	var r0 TransferResult
-	if err := a.a.Call(
-		a.canisterId,
-		"transfer",
-		[]any{arg0},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
 // AccountBalance calls the "account_balance" method on the "ledger" canister.
-func (a Agent) AccountBalance(arg0 AccountBalanceArgs) (*Tokens, error) {
+func (a Agent) AccountBalance(arg0 AccountIdentifierByteBuf) (*Tokens, error) {
 	var r0 Tokens
-	if err := a.a.Query(
-		a.canisterId,
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"account_balance",
 		[]any{arg0},
 		[]any{&r0},
@@ -432,11 +474,25 @@ func (a Agent) AccountBalance(arg0 AccountBalanceArgs) (*Tokens, error) {
 	return &r0, nil
 }
 
+// AccountBalanceDfx calls the "account_balance_dfx" method on the "ledger" canister.
+func (a Agent) AccountBalanceDfx(arg0 AccountBalanceArgs) (*Tokens, error) {
+	var r0 Tokens
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"account_balance_dfx",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
 // AccountIdentifier calls the "account_identifier" method on the "ledger" canister.
-func (a Agent) AccountIdentifier(arg0 Account) (*AccountIdentifier, error) {
-	var r0 AccountIdentifier
-	if err := a.a.Query(
-		a.canisterId,
+func (a Agent) AccountIdentifier(arg0 Account) (*[]byte, error) {
+	var r0 []byte
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"account_identifier",
 		[]any{arg0},
 		[]any{&r0},
@@ -446,13 +502,271 @@ func (a Agent) AccountIdentifier(arg0 Account) (*AccountIdentifier, error) {
 	return &r0, nil
 }
 
-// TransferFee calls the "transfer_fee" method on the "ledger" canister.
-func (a Agent) TransferFee(arg0 TransferFeeArg) (*TransferFee, error) {
-	var r0 TransferFee
-	if err := a.a.Query(
-		a.canisterId,
-		"transfer_fee",
+// Archives calls the "archives" method on the "ledger" canister.
+func (a Agent) Archives() (*Archives, error) {
+	var r0 Archives
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"archives",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Decimals calls the "decimals" method on the "ledger" canister.
+func (a Agent) Decimals() (*Decimals, error) {
+	var r0 Decimals
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"decimals",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc10SupportedStandards calls the "icrc10_supported_standards" method on the "ledger" canister.
+func (a Agent) Icrc10SupportedStandards() (*[]StandardRecord, error) {
+	var r0 []StandardRecord
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc10_supported_standards",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1BalanceOf calls the "icrc1_balance_of" method on the "ledger" canister.
+func (a Agent) Icrc1BalanceOf(arg0 Account) (*idl.Nat, error) {
+	var r0 idl.Nat
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_balance_of",
 		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Decimals calls the "icrc1_decimals" method on the "ledger" canister.
+func (a Agent) Icrc1Decimals() (*uint8, error) {
+	var r0 uint8
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_decimals",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Fee calls the "icrc1_fee" method on the "ledger" canister.
+func (a Agent) Icrc1Fee() (*idl.Nat, error) {
+	var r0 idl.Nat
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_fee",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Metadata calls the "icrc1_metadata" method on the "ledger" canister.
+func (a Agent) Icrc1Metadata() (*[]struct {
+	Field0 string        `ic:"0,tuple" json:"0,tuple"`
+	Field1 MetadataValue `ic:"1,tuple" json:"1,tuple"`
+}, error) {
+	var r0 []struct {
+		Field0 string        `ic:"0,tuple" json:"0,tuple"`
+		Field1 MetadataValue `ic:"1,tuple" json:"1,tuple"`
+	}
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_metadata",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1MintingAccount calls the "icrc1_minting_account" method on the "ledger" canister.
+func (a Agent) Icrc1MintingAccount() (**Account, error) {
+	var r0 *Account
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_minting_account",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Name calls the "icrc1_name" method on the "ledger" canister.
+func (a Agent) Icrc1Name() (*string, error) {
+	var r0 string
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_name",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1SupportedStandards calls the "icrc1_supported_standards" method on the "ledger" canister.
+func (a Agent) Icrc1SupportedStandards() (*[]StandardRecord, error) {
+	var r0 []StandardRecord
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_supported_standards",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Symbol calls the "icrc1_symbol" method on the "ledger" canister.
+func (a Agent) Icrc1Symbol() (*string, error) {
+	var r0 string
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_symbol",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1TotalSupply calls the "icrc1_total_supply" method on the "ledger" canister.
+func (a Agent) Icrc1TotalSupply() (*idl.Nat, error) {
+	var r0 idl.Nat
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc1_total_supply",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc1Transfer calls the "icrc1_transfer" method on the "ledger" canister.
+func (a Agent) Icrc1Transfer(arg0 TransferArg) (*Result, error) {
+	var r0 Result
+	if err := a.Agent.Call(
+		a.CanisterId,
+		"icrc1_transfer",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc21CanisterCallConsentMessage calls the "icrc21_canister_call_consent_message" method on the "ledger" canister.
+func (a Agent) Icrc21CanisterCallConsentMessage(arg0 ConsentMessageRequest) (*Result1, error) {
+	var r0 Result1
+	if err := a.Agent.Call(
+		a.CanisterId,
+		"icrc21_canister_call_consent_message",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc2Allowance calls the "icrc2_allowance" method on the "ledger" canister.
+func (a Agent) Icrc2Allowance(arg0 AllowanceArgs) (*Allowance, error) {
+	var r0 Allowance
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"icrc2_allowance",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc2Approve calls the "icrc2_approve" method on the "ledger" canister.
+func (a Agent) Icrc2Approve(arg0 ApproveArgs) (*Result2, error) {
+	var r0 Result2
+	if err := a.Agent.Call(
+		a.CanisterId,
+		"icrc2_approve",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Icrc2TransferFrom calls the "icrc2_transfer_from" method on the "ledger" canister.
+func (a Agent) Icrc2TransferFrom(arg0 TransferFromArgs) (*Result3, error) {
+	var r0 Result3
+	if err := a.Agent.Call(
+		a.CanisterId,
+		"icrc2_transfer_from",
+		[]any{arg0},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// IsLedgerReady calls the "is_ledger_ready" method on the "ledger" canister.
+func (a Agent) IsLedgerReady() (*bool, error) {
+	var r0 bool
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"is_ledger_ready",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Name calls the "name" method on the "ledger" canister.
+func (a Agent) Name() (*Name, error) {
+	var r0 Name
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"name",
+		[]any{},
 		[]any{&r0},
 	); err != nil {
 		return nil, err
@@ -463,8 +777,8 @@ func (a Agent) TransferFee(arg0 TransferFeeArg) (*TransferFee, error) {
 // QueryBlocks calls the "query_blocks" method on the "ledger" canister.
 func (a Agent) QueryBlocks(arg0 GetBlocksArgs) (*QueryBlocksResponse, error) {
 	var r0 QueryBlocksResponse
-	if err := a.a.Query(
-		a.canisterId,
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"query_blocks",
 		[]any{arg0},
 		[]any{&r0},
@@ -477,8 +791,8 @@ func (a Agent) QueryBlocks(arg0 GetBlocksArgs) (*QueryBlocksResponse, error) {
 // QueryEncodedBlocks calls the "query_encoded_blocks" method on the "ledger" canister.
 func (a Agent) QueryEncodedBlocks(arg0 GetBlocksArgs) (*QueryEncodedBlocksResponse, error) {
 	var r0 QueryEncodedBlocksResponse
-	if err := a.a.Query(
-		a.canisterId,
+	if err := a.Agent.Query(
+		a.CanisterId,
 		"query_encoded_blocks",
 		[]any{arg0},
 		[]any{&r0},
@@ -488,79 +802,11 @@ func (a Agent) QueryEncodedBlocks(arg0 GetBlocksArgs) (*QueryEncodedBlocksRespon
 	return &r0, nil
 }
 
-// Symbol calls the "symbol" method on the "ledger" canister.
-func (a Agent) Symbol() (*struct {
-	Symbol string `ic:"symbol"`
-}, error) {
-	var r0 struct {
-		Symbol string `ic:"symbol"`
-	}
-	if err := a.a.Query(
-		a.canisterId,
-		"symbol",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Name calls the "name" method on the "ledger" canister.
-func (a Agent) Name() (*struct {
-	Name string `ic:"name"`
-}, error) {
-	var r0 struct {
-		Name string `ic:"name"`
-	}
-	if err := a.a.Query(
-		a.canisterId,
-		"name",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Decimals calls the "decimals" method on the "ledger" canister.
-func (a Agent) Decimals() (*struct {
-	Decimals uint32 `ic:"decimals"`
-}, error) {
-	var r0 struct {
-		Decimals uint32 `ic:"decimals"`
-	}
-	if err := a.a.Query(
-		a.canisterId,
-		"decimals",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Archives calls the "archives" method on the "ledger" canister.
-func (a Agent) Archives() (*Archives, error) {
-	var r0 Archives
-	if err := a.a.Query(
-		a.canisterId,
-		"archives",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
 // SendDfx calls the "send_dfx" method on the "ledger" canister.
-func (a Agent) SendDfx(arg0 SendArgs) (*BlockIndex, error) {
-	var r0 BlockIndex
-	if err := a.a.Call(
-		a.canisterId,
+func (a Agent) SendDfx(arg0 SendArgs) (*uint64, error) {
+	var r0 uint64
+	if err := a.Agent.Call(
+		a.CanisterId,
 		"send_dfx",
 		[]any{arg0},
 		[]any{&r0},
@@ -570,12 +816,26 @@ func (a Agent) SendDfx(arg0 SendArgs) (*BlockIndex, error) {
 	return &r0, nil
 }
 
-// AccountBalanceDfx calls the "account_balance_dfx" method on the "ledger" canister.
-func (a Agent) AccountBalanceDfx(arg0 AccountBalanceArgsDfx) (*Tokens, error) {
-	var r0 Tokens
-	if err := a.a.Query(
-		a.canisterId,
-		"account_balance_dfx",
+// Symbol calls the "symbol" method on the "ledger" canister.
+func (a Agent) Symbol() (*Symbol, error) {
+	var r0 Symbol
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"symbol",
+		[]any{},
+		[]any{&r0},
+	); err != nil {
+		return nil, err
+	}
+	return &r0, nil
+}
+
+// Transfer calls the "transfer" method on the "ledger" canister.
+func (a Agent) Transfer(arg0 TransferArgs) (*Result6, error) {
+	var r0 Result6
+	if err := a.Agent.Call(
+		a.CanisterId,
+		"transfer",
 		[]any{arg0},
 		[]any{&r0},
 	); err != nil {
@@ -584,192 +844,13 @@ func (a Agent) AccountBalanceDfx(arg0 AccountBalanceArgsDfx) (*Tokens, error) {
 	return &r0, nil
 }
 
-// Icrc1Name calls the "icrc1_name" method on the "ledger" canister.
-func (a Agent) Icrc1Name() (*string, error) {
-	var r0 string
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_name",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1Symbol calls the "icrc1_symbol" method on the "ledger" canister.
-func (a Agent) Icrc1Symbol() (*string, error) {
-	var r0 string
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_symbol",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1Decimals calls the "icrc1_decimals" method on the "ledger" canister.
-func (a Agent) Icrc1Decimals() (*uint8, error) {
-	var r0 uint8
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_decimals",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1Metadata calls the "icrc1_metadata" method on the "ledger" canister.
-func (a Agent) Icrc1Metadata() (*[]struct {
-	field0 string `ic:"field0"`
-	field1 Value  `ic:"field1"`
-}, error) {
-	var r0 []struct {
-		field0 string `ic:"field0"`
-		field1 Value  `ic:"field1"`
-	}
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_metadata",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1TotalSupply calls the "icrc1_total_supply" method on the "ledger" canister.
-func (a Agent) Icrc1TotalSupply() (*Icrc1Tokens, error) {
-	var r0 Icrc1Tokens
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_total_supply",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1Fee calls the "icrc1_fee" method on the "ledger" canister.
-func (a Agent) Icrc1Fee() (*Icrc1Tokens, error) {
-	var r0 Icrc1Tokens
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_fee",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1MintingAccount calls the "icrc1_minting_account" method on the "ledger" canister.
-func (a Agent) Icrc1MintingAccount() (**Account, error) {
-	var r0 *Account
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_minting_account",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1BalanceOf calls the "icrc1_balance_of" method on the "ledger" canister.
-func (a Agent) Icrc1BalanceOf(arg0 Account) (*Icrc1Tokens, error) {
-	var r0 Icrc1Tokens
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_balance_of",
-		[]any{arg0},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1Transfer calls the "icrc1_transfer" method on the "ledger" canister.
-func (a Agent) Icrc1Transfer(arg0 TransferArg) (*Icrc1TransferResult, error) {
-	var r0 Icrc1TransferResult
-	if err := a.a.Call(
-		a.canisterId,
-		"icrc1_transfer",
-		[]any{arg0},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc1SupportedStandards calls the "icrc1_supported_standards" method on the "ledger" canister.
-func (a Agent) Icrc1SupportedStandards() (*[]struct {
-	Name string `ic:"name"`
-	Url  string `ic:"url"`
-}, error) {
-	var r0 []struct {
-		Name string `ic:"name"`
-		Url  string `ic:"url"`
-	}
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc1_supported_standards",
-		[]any{},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc2Approve calls the "icrc2_approve" method on the "ledger" canister.
-func (a Agent) Icrc2Approve(arg0 ApproveArgs) (*ApproveResult, error) {
-	var r0 ApproveResult
-	if err := a.a.Call(
-		a.canisterId,
-		"icrc2_approve",
-		[]any{arg0},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc2Allowance calls the "icrc2_allowance" method on the "ledger" canister.
-func (a Agent) Icrc2Allowance(arg0 AllowanceArgs) (*Allowance, error) {
-	var r0 Allowance
-	if err := a.a.Query(
-		a.canisterId,
-		"icrc2_allowance",
-		[]any{arg0},
-		[]any{&r0},
-	); err != nil {
-		return nil, err
-	}
-	return &r0, nil
-}
-
-// Icrc2TransferFrom calls the "icrc2_transfer_from" method on the "ledger" canister.
-func (a Agent) Icrc2TransferFrom(arg0 TransferFromArgs) (*TransferFromResult, error) {
-	var r0 TransferFromResult
-	if err := a.a.Call(
-		a.canisterId,
-		"icrc2_transfer_from",
+// TransferFee calls the "transfer_fee" method on the "ledger" canister.
+func (a Agent) TransferFee(arg0 struct {
+}) (*TransferFee, error) {
+	var r0 TransferFee
+	if err := a.Agent.Query(
+		a.CanisterId,
+		"transfer_fee",
 		[]any{arg0},
 		[]any{&r0},
 	); err != nil {

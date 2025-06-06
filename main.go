@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/aviate-labs/agent-go"
 	"github.com/aviate-labs/agent-go-example/ledger"
-	"github.com/aviate-labs/agent-go/ic"
 	"github.com/aviate-labs/agent-go/principal"
-	"log"
 )
 
+var LEDGER_PRINCIPAL = principal.MustDecode("ryjl3-tyaaa-aaaaa-aaaba-cai")
+
 func main() {
-	ledgerAgent, err := ledger.NewAgent(ic.LEDGER_PRINCIPAL, agent.DefaultConfig)
+	ledgerAgent, err := ledger.NewAgent(LEDGER_PRINCIPAL, agent.DefaultConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,20 +37,20 @@ func main() {
 		operation := block.Transaction.Operation
 		if transfer := operation.Transfer; transfer != nil {
 			var from principal.AccountIdentifier
-			copy(from[:], transfer.From)
+			copy(from[:], transfer.From[4:])
 
 			var to principal.AccountIdentifier
-			copy(to[:], transfer.To)
+			copy(to[:], transfer.To[4:])
 
 			fmt.Printf("Block %d: %s -> %s: %.2f ICP.\n", int(lastBlock)+i, from, to, float64(transfer.Amount.E8s)/1e8)
 		} else if burn := operation.Burn; burn != nil {
 			var from principal.AccountIdentifier
-			copy(from[:], burn.From)
+			copy(from[:], burn.From[4:])
 
 			fmt.Printf("Block %d: %s: %.2f ICP burned.\n", int(lastBlock)+i, from, float64(burn.Amount.E8s)/1e8)
 		} else if mint := operation.Mint; mint != nil {
 			var to principal.AccountIdentifier
-			copy(to[:], mint.To)
+			copy(to[:], mint.To[4:])
 
 			fmt.Printf("Block %d: %s: %.2f ICP minted.\n", int(lastBlock)+i, to, float64(mint.Amount.E8s)/1e8)
 		}
